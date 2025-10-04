@@ -1,8 +1,5 @@
 # Streaming/arquivo_de_midia.py
 
-from datetime import datetime
-from pathlib import Path
-
 class ArquivoDeMidia:
     """
     Classe base para qualquer tipo de mídia (música, podcast, etc.)
@@ -10,21 +7,26 @@ class ArquivoDeMidia:
     A igualdade (__eq__) compara título e artista, sem diferenciar maiúsculas/minúsculas.
     """
 
-    # Lista de instâncias de qualquer mídia criada
+    # Lista de todas as mídias criadas
     # Usada para buscas por título em todo o sistema
-    registroMidia = []  
+    registroMidia = []
 
     def __init__(self, titulo: str, duracao: int, artista: str, reproducoes: int = 0):
-        # Título da mídia
+        """Inicializa os atributos básicos de uma mídia."""
         self.titulo = titulo.strip()
-        # Duração em segundos (int)
-        self.duracao = int(duracao)
-        # Nome do artista/intérprete
         self.artista = artista.strip()
-        # Contador de execuções iniciado em zero
-        self.reproducoes = int(reproducoes)
 
-        # Adiciona a nova mídia ao registro global de mídias
+        # Validação da duração (deve ser inteiro positivo)
+        if not isinstance(duracao, int) or duracao <= 0:
+            raise ValueError("Duração inválida: deve ser um inteiro positivo.")
+        self.duracao = duracao
+
+        # Validação das reproduções (inteiro >= 0)
+        if not isinstance(reproducoes, int) or reproducoes < 0:
+            raise ValueError("Reproduções inválidas: deve ser um inteiro maior ou igual a zero.")
+        self.reproducoes = reproducoes
+
+        # Adiciona a mídia ao registro global
         ArquivoDeMidia.registroMidia.append(self)
 
     @classmethod
@@ -36,11 +38,10 @@ class ArquivoDeMidia:
                 return m
         return None
 
-    # Métodos obrigatórios especiais
     def reproduzir(self) -> None:
         """Simula a reprodução da mídia e mostra informações básicas."""
         self.reproducoes += 1
-        print(f"-> Reproduzindo: '{self.titulo}' — {self.artista} ({self.duracao}s). "
+        print(f"▶ Reproduzindo: '{self.titulo}' — {self.artista} ({self.duracao}s). "
               f"Total de reproduções: {self.reproducoes}")
 
     def __eq__(self, other) -> bool:
@@ -52,11 +53,11 @@ class ArquivoDeMidia:
 
     def __str__(self) -> str:
         """Retorna uma string amigável com as informações principais."""
-        return (f"A mídia '{self.titulo}' do artista {self.artista} | "
+        return (f"Mídia: {self.titulo} | Artista: {self.artista} | "
                 f"Duração: {self.duracao}s | Reproduções: {self.reproducoes}")
 
     def __repr__(self) -> str:
-        """Representação detalhada (usada para depuração)."""
+        """Representação detalhada (para depuração)."""
         cls = self.__class__.__name__
         return (f"{cls}(titulo='{self.titulo}', duracao={self.duracao}, "
                 f"artista='{self.artista}', reproducoes={self.reproducoes})")
