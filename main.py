@@ -1,7 +1,8 @@
+# main.py
 from pathlib import Path
 from datetime import datetime
 
-# Imports alinhados com a sua estrutura de pastas/arquivos
+# Imports alinhados com a sua estrutura
 from Streaming.menu import Menu
 from Streaming.usuario import Usuario
 from Streaming.musica import Musica
@@ -9,17 +10,114 @@ from Streaming.podcast import Podcast
 from Streaming.playlist import Playlist
 from Streaming.analises import Analises
 
-
-# ----------------------- utilidades de log e relatório -----------------------
+# ------------------------------ caminhos padrão ------------------------------
+CONFIG_PATH = Path("config/dados.md")
 LOG_PATH = Path("logs/erros.log")
 REL_PATH = Path("relatorios/relatorio.txt")
 
-def log_erro(msg: str):
+
+# --------------------------------- utilidades --------------------------------
+def log_erro(msg: str) -> None:
+    """Acrescenta uma linha no arquivo de log com data/hora."""
     LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
     with LOG_PATH.open("a", encoding="utf-8") as f:
         f.write(f"[{datetime.now()}] {msg}\n")
 
-def salvar_relatorio_txt(musicas, playlists, usuarios, destino: Path = REL_PATH):
+
+def parse_dados_md(caminho: Path) -> dict:
+    """
+    Parser simples do 'config/dados.md' (sem libs externas).
+    Seções aceitas (case-insensitive):
+      # MUSICAS   ->  - titulo | duracao(int) | artista | genero
+      # PODCASTS  ->  - titulo | duracao(int) | artista | temporada | episodio(int) | host
+      # USUARIOS  ->  - nome
+    Linhas devem começar com '-'. Espaços são tolerados.
+    """
+    dados = {"MUSICAS": [], "PODCASTS": [], "USUARIOS": []}
+    sec = None
+
+    if not caminho.exists():
+        return dados
+
+    linhas = caminho.read_text(encoding="utf-8").splitlines()
+    for n, raw in enumerate(linhas, start=1):
+        line = raw.strip()
+        if not line or line.startswith("//"):
+            continue
+
+        up = line.upper()
+        if up.startswith("# MUSICAS"):
+            sec = "MUSICAS";  continue
+        if up.startswith("# PODCASTS"):
+            sec = "PODCASTS"; continue
+        if up.startswith("# USUARIOS"):
+            sec = "USUARIOS"; continue
+
+        if not sec:
+            log_erro(f"Linha {n}: fora de seção válida -> {raw}")
+            continue
+
+        if not line.startswith("-"):
+            log_erro(f"Linha {n}: esperado '-' no início -> {raw}")
+            continue
+
+        campos = [c.strip() for c in line[1:].split("|")]
+
+        try:
+            if sec == "MUSICAS":
+                if len(campos) != 4:
+                    raise ValueError("MUSICAS exige 4 campos")
+                titulo, duracao, artista, genero = campos
+                duracao = int(duracao)
+                if duracao <= 0:
+                    raise ValueError("duração inválida")
+                dados["MUSICAS"].append((titulo, duracao, artista, genero))
+
+            elif sec == "PODCASTS":
+                if len(campos) != 6:
+                    raise ValueError("PODCASTS exige 6 campos")
+                titulo, duracao, artista, temporada, episodio, host = campos
+                duracao = int(duracao)
+                episodio = int(episodio)
+                if duracao <= 0 or episodio < 0:
+                    raise ValueError("valores inválidos")
+                dados["PODCASTS"].append((titulo, duracao, artista, temporada, episodio, host))
+
+            elif sec == "USUARIOS":
+                if len(campos) != 1:
+                    raise ValueError("USUARIOS exige 1 campo (nome)")
+                nome = campos[0]
+                dados["USUARIOS"].append(nome)
+
+        except Exception as e:
+            log_erro(f"Linha {n} ({sec}): {e} -> {raw}")
+
+    return dados
+
+
+def carregar_dados_do_arquivo(app: "StreamingApp") -> None:
+    """Preenche app.musicas, app.podcasts e app.usuarios usando config/dados.md."""
+    data = parse_dados_md(CONFIG_PATH)
+
+    # Usuários (evita duplicar pelo nome formatado)
+    for nome in data["USUARIOS"]:
+        nome_fmt = nome.strip().title()
+        if not any(u.nome == nome_fmt for u in app.usuarios):
+            app.usuarios.append(Usuario(nome_fmt))
+
+    # Músicas (evita duplicar por título)
+    for (titulo, duracao, artista, genero) in data["MUSICAS"]:
+        if not any(m.titulo.lower() == titulo.lower() for m in app.musicas):
+            app.musicas.append(Musica(titulo, duracao, artista, genero))
+
+    # Podcasts (evita duplicar por título)
+    for (titulo, duracao, artista, temporada, episodio, host) in data["PODCASTS"]:
+        if not any(p.titulo.lower() == titulo.lower() for p in app.podcasts):
+            app.podcasts.append(Podcast(titulo, duracao, artista, temporada, episodio, host))
+
+
+def salvar_relatorio_txt(musicas, playlists, usuarios, destino: Path = REL_PATH) -> None:
+    """Gera/atualiza o relatório com análises agregadas."""
     destino.parent.mkdir(parents=True, exist_ok=True)
 
     top = Analises.top_musicas_reproduzidas(musicas, top_n=10)
@@ -46,12 +144,14 @@ def salvar_relatorio_txt(musicas, playlists, usuarios, destino: Path = REL_PATH)
         linhas.append(f"- {k}: {v:.2f}")
     linhas.append("")
     linhas.append(f"Total de reproduções no sistema: {total}")
+
     destino.write_text("\n".join(linhas), encoding="utf-8")
     print(f"Relatório salvo em {destino}")
 
 
-# ----------------------- controlador do app (regras) ------------------------
+# ------------------------------- controlador APP -----------------------------
 class StreamingApp:
+    """Camada de regra de negócio do sistema."""
     def __init__(self):
         self.usuarios: list[Usuario] = []
         self.musicas: list[Musica] = []
@@ -63,32 +163,37 @@ class StreamingApp:
         self.usuarios.append(u)
         return u
 
-    # ajuda: procurar mídia por título dentre músicas e podcasts
     def buscar_midia_por_titulo(self, titulo: str):
+        """Procura por título (case-insensitive) em músicas e podcasts."""
+        t = titulo.strip().lower()
         for m in self.musicas:
-            if m.titulo.lower() == titulo.lower():
+            if m.titulo.lower() == t:
                 return m
         for p in self.podcasts:
-            if p.titulo.lower() == titulo.lower():
+            if p.titulo.lower() == t:
                 return p
         return None
 
 
-# ----------------------- fluxo principal ------------------------------------
-def main():
+# ----------------------------------- fluxo -----------------------------------
+def main() -> None:
     menu = Menu()
     app = StreamingApp()
 
-    # (opcional) dados de exemplo rápidos
-    app.musicas.extend([
-        Musica("Flor e o Beija-Flor", 210, "Henrique & Juliano", "Sertanejo"),
-        Musica("Imagine", 183, "John Lennon", "Rock"),
-        Musica("As It Was", 168, "Harry Styles", "Pop"),
-    ])
-    app.podcasts.extend([
-        Podcast("DevTalk", 3600, "Canal X", "T1", 1, "Ana"),
-        Podcast("DadosCast", 2800, "PUCRS", "T2", 3, "Otávio"),
-    ])
+    # 1) Carrega do arquivo (regra de ouro do enunciado)
+    carregar_dados_do_arquivo(app)
+
+    # 2) Fallback opcional (se o arquivo estiver vazio)
+    if not app.musicas and not app.podcasts:
+        app.musicas.extend([
+            Musica("Flor e o Beija-Flor", 210, "Henrique & Juliano", "Sertanejo"),
+            Musica("Imagine", 183, "John Lennon", "Rock"),
+            Musica("As It Was", 168, "Harry Styles", "Pop"),
+        ])
+        app.podcasts.extend([
+            Podcast("DevTalk", 3600, "Canal X", "T1", 1, "Ana"),
+            Podcast("DadosCast", 2800, "PUCRS", "T2", 3, "Otávio"),
+        ])
 
     usuarios = app.usuarios
     usuario_logado: Usuario | None = None
@@ -146,13 +251,13 @@ def main():
             opcao = menu.exibir_menu_usuario(usuario_logado.nome)
 
             match opcao:
-                case "1":  # Reproduzir uma música
-                    titulo = input("Título da música a reproduzir: ").strip()
+                case "1":  # Reproduzir uma música/podcast pelo título
+                    titulo = input("Título da mídia a reproduzir: ").strip()
                     midia = app.buscar_midia_por_titulo(titulo)
                     if midia:
                         usuario_logado.ouvir_midia(midia)
                     else:
-                        print("Música não encontrada.")
+                        print("Mídia não encontrada.")
 
                 case "2":  # Listar músicas
                     if not app.musicas:
@@ -187,7 +292,7 @@ def main():
                     else:
                         print("Playlist não encontrada.")
 
-                case "6":  # Criar nova playlist
+                case "6":  # Criar nova playlist (+ opção de adicionar mídia)
                     nome = input("Nome da nova playlist: ").strip()
                     if not nome:
                         print("Nome inválido.")
@@ -195,30 +300,31 @@ def main():
                     pl = Playlist(nome, usuario_logado)
                     app.playlists.append(pl)
                     print(f"Playlist '{pl.nome}' criada.")
+
                     add = input("Adicionar uma mídia agora? (s/N) ").strip().lower()
                     if add == "s":
                         titulo = input("Título exato da música/podcast: ").strip()
                         midia = app.buscar_midia_por_titulo(titulo)
                         if midia:
-                            pl.adicionar_midia(midia)  # passa o OBJETO, não string
+                            pl.adicionar_midia(midia)  # passa OBJETO, não string
                             print("Mídia adicionada.")
                         else:
                             print("Não encontrada.")
 
-                case "7":  # Concatenar playlists
+                case "7":  # Concatenar playlists (mantém nome da 1ª e soma reproduções)
                     destino = input("Playlist 1 (destino): ").strip()
                     juntar = input("Playlist 2 (a ser juntada): ").strip()
                     p1 = next((p for p in app.playlists if p.nome.lower() == destino.lower()), None)
                     p2 = next((p for p in app.playlists if p.nome.lower() == juntar.lower()), None)
                     if p1 and p2:
-                        nova = p1 + p2  # __add__ mantém nome da primeira e soma reproduções
+                        nova = p1 + p2
                         # substitui p1 pela nova concatenada
                         app.playlists = [p if p is not p1 else nova for p in app.playlists]
                         print(f"Playlists concatenadas em '{nova.nome}'. Itens: {len(nova)}")
                     else:
                         print("Playlist de destino ou origem não encontrada.")
 
-                case "8":  # Gerar relatório
+                case "8":  # Gerar relatório agregado
                     salvar_relatorio_txt(app.musicas, app.playlists, app.usuarios)
 
                 case "9":  # Sair do usuário logado
@@ -229,6 +335,7 @@ def main():
                     print("Opção inválida. Tente novamente.")
 
 
+# --------------------------------- bootstrap ---------------------------------
 if __name__ == "__main__":
     try:
         main()
