@@ -1,13 +1,20 @@
 # Streaming/menu.py
 
 class Menu:
+    """
+    Classe responsável por exibir e gerenciar os menus do sistema de streaming.
+    Contém o menu inicial e o menu do usuário.
+    """
+
     def __init__(self):
+        """Inicializa as opções disponíveis nos menus."""
         self.opcoes_iniciais = {
             "1": "Entrar como usuário",
             "2": "Criar novo usuário",
             "3": "Listar usuários",
             "4": "Sair"
         }
+
         self.opcoes_usuario = {
             "1": "Reproduzir uma música",
             "2": "Listar músicas",
@@ -21,20 +28,19 @@ class Menu:
         }
 
     def exibir_menu_inicial(self):
+        """Mostra o menu principal e retorna a escolha do usuário."""
         print("\n=== MENU INICIAL ===")
-        for k, v in self.opcoes_iniciais.items():
-            print(f"{k} - {v}")
+        for chave, descricao in self.opcoes_iniciais.items(): # chave = número da opção / descricao = texto exibido na tela
+            print(f"{chave} - {descricao}")
         return input("Escolha uma opção: ")
 
-    def exibir_menu_usuario(self, usuario_nome):
-        print(f"\n=== MENU DO USUÁRIO ({usuario_nome}) ===")
-        for k, v in self.opcoes_usuario.items():
-            print(f"{k} - {v}")
+    def exibir_menu_usuario(self, nome_usuario: str):
+        print(f"\n=== MENU DO USUÁRIO: {nome_usuario} ===")
+        # chave = número da opção / descricao = texto exibido na tela
+        for chave, descricao in self.opcoes_usuario.items():
+            print(f"{chave} - {descricao}")
         return input("Escolha uma opção: ")
 
     def __str__(self):
-        return "Classe responsável por gerenciar os menus do sistema de streaming."
-
-    def __repr__(self):
-        return f"Menu(opcoes_iniciais={len(self.opcoes_iniciais)}, opcoes_usuario={len(self.opcoes_usuario)})"
-
+        """Retorna uma descrição simples da classe."""
+        return "Classe responsável pelos menus do sistema de streaming."
