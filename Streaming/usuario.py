@@ -9,7 +9,7 @@ class Usuario:
     Contador de instâncias: qntd_instancias.
     """
 
-    # contador de usuários criados (exigido no enunciado)
+    """Contador de usuários criados (exigido no enunciado)"""
     qntd_instancias = 0
 
     def __init__(self, nome: str):
@@ -17,10 +17,13 @@ class Usuario:
         nome_limpo = nome.strip()
         if not nome_limpo:
             raise ValueError("Nome de usuário inválido.")
-        self.nome = nome_limpo
-        self.playlists = []    # playlists criadas por este usuário
-        self.historico = []    # mídias reproduzidas por este usuário
 
+        """Atributos principais"""
+        self.nome = nome_limpo              # nome do usuário
+        self.playlists = []                 # playlists criadas por este usuário
+        self.historico = []                 # mídias reproduzidas por este usuário
+
+        """Incrementa o contador de instâncias"""
         Usuario.qntd_instancias += 1
 
     def ouvir_midia(self, midia: ArquivoDeMidia) -> None:
@@ -43,17 +46,18 @@ class Usuario:
         if not nome_limpo:
             raise ValueError("Nome de playlist inválido.")
 
-        # bloqueia duplicidade de playlist para o MESMO usuário (exigência do enunciado)
+        """Bloqueia duplicidade de playlist para o mesmo usuário (exigência do enunciado)"""
         for p in self.playlists:
             if p.nome.strip().lower() == nome_limpo.lower():
                 raise ValueError("Playlist já existe para este usuário.")
 
+        """Cria e adiciona a nova playlist"""
         nova = Playlist(nome_limpo, self)
         self.playlists.append(nova)
         return nova
 
     def __str__(self) -> str:
-        """Representação amigável do usuário."""
+        """Mostra um resumo simples do usuário."""
         return (f"Usuário: {self.nome} | "
                 f"Playlists: {len(self.playlists)} | "
                 f"Histórico: {len(self.historico)} reproduções")
