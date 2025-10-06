@@ -1,4 +1,4 @@
-# Aqui ficarão os dados iniciais do sistema
+# Aqui ficarão os dados iniciais do sistema 
 
 # MÚSICAS
 - Flor e o Beija-Flor | 210 | Henrique & Juliano | Sertanejo
@@ -12,7 +12,3 @@
 # USUÁRIOS
 - Sofia
 - Rafael
-
-# PLAYLISTS
-- Favoritas | Sofia | Flor e o Beija-Flor, Imagine
-- Clássicos | Rafael | Imagine, As It Was
