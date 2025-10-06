@@ -16,21 +16,22 @@ class Playlist:
         if not isinstance(usuario, Usuario):
             raise ValueError("Usuário inválido para a playlist.")
 
-        self.nome = nome_limpo            # nome da playlist
-        self.usuario = usuario            # dono/criador da playlist
-        self.itens: list[ArquivoDeMidia] = []  # lista de mídias (músicas/podcasts)
-        self.reproducoes = 0              # contador de execuções da playlist
+        """Atributos principais"""
+        self.nome = nome_limpo                     # nome da playlist
+        self.usuario = usuario                     # dono/criador da playlist
+        self.itens: list[ArquivoDeMidia] = []      # lista de mídias (músicas/podcasts)
+        self.reproducoes = 0                       # contador de execuções da playlist
 
     def adicionar_midia(self, midia: ArquivoDeMidia) -> None:
         """Adiciona uma mídia (música/podcast) à playlist."""
         if not isinstance(midia, ArquivoDeMidia):
             raise ValueError("Apenas objetos de mídia podem ser adicionados.")
-        self.itens.append(midia)          # adiciona no final da lista
+        self.itens.append(midia)                   # adiciona no final da lista
 
     def remover_midia(self, midia: ArquivoDeMidia) -> None:
         """Remove uma mídia da playlist."""
         if midia in self.itens:
-            self.itens.remove(midia)      # remove a primeira ocorrência
+            self.itens.remove(midia)               # remove a primeira ocorrência
         else:
             raise ValueError("Mídia não encontrada na playlist.")
 
@@ -43,11 +44,12 @@ class Playlist:
             print(f"Playlist '{self.nome}' está vazia.")
             return
 
-        print(f"\n▶ Reproduzindo playlist: {self.nome} (itens: {len(self.itens)})")
+        print(f"\nReproduzindo playlist: {self.nome} (itens: {len(self.itens)})")
+        """Percorre a lista e chama o método reproduzir() de cada mídia"""
         for midia in self.itens:
-            midia.reproduzir()            # chama o método reproduzir() de cada mídia
+            midia.reproduzir()
         self.reproducoes += 1
-        print(f"▶ Fim da playlist '{self.nome}'. Reproduções: {self.reproducoes}")
+        print(f"Fim da playlist '{self.nome}'. Reproduções: {self.reproducoes}")
 
     def __add__(self, outra: "Playlist") -> "Playlist":
         """
@@ -57,8 +59,10 @@ class Playlist:
         if not isinstance(outra, Playlist):
             return NotImplemented
 
-        nova = Playlist(self.nome, self.usuario)     # nova playlist com mesmo nome e usuário
-        nova.itens = list(self.itens) + list(outra.itens)  # junta os itens das duas
+        """Cria nova playlist com mesmo nome e usuário"""
+        nova = Playlist(self.nome, self.usuario)
+        """Junta os itens e soma as reproduções"""
+        nova.itens = list(self.itens) + list(outra.itens)
         nova.reproducoes = self.reproducoes + outra.reproducoes
         return nova
 
@@ -86,7 +90,7 @@ class Playlist:
         if self.nome.strip().lower() != outra.nome.strip().lower():
             return False
 
-        # cria listas com os títulos das mídias, em minúsculas
+        """Cria listas com os títulos das mídias, em minúsculas"""
         def titulos(pl):
             return [m.titulo.strip().lower() for m in pl.itens]
 
