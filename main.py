@@ -1,6 +1,8 @@
 # main.py
 from pathlib import Path
 from datetime import datetime
+
+# --- imports do pacote (nomes exigidos no enunciado) ---
 from Streaming.menu import Menu
 from Streaming.usuario import Usuario
 from Streaming.musica import Musica
@@ -9,102 +11,266 @@ from Streaming.playlist import Playlist
 from Streaming.analises import Analises
 from Streaming.arquivo_de_midia import ArquivoDeMidia
 
-# ------------------------------ Coleções globais ------------------------------
+# ------------------------------ coleções globais ------------------------------
 USUARIOS: list[Usuario] = []
-MUSICAS: list[Musica] = []
+MUSICAS:  list[Musica]  = []
 PODCASTS: list[Podcast] = []
-PLAYLISTS: list[Playlist] = []
+PLAYLISTS:list[Playlist]= []
 
-# Caminhos padrão
+# ------------------------------ caminhos padrão -------------------------------
 ARQ_DADOS = Path("config/dados.md")
-ARQ_LOG = Path("logs/erros.log")
-ARQ_REL = Path("relatorios/relatorio.txt")
+ARQ_LOG   = Path("logs/erros.log")
+ARQ_REL   = Path("relatorios/relatorio.txt")
 
-# ------------------------------ Funções úteis ---------------------------------
+# ------------------------------- utilidades ----------------------------------
 def log_erro(msg: str) -> None:
-    """Registra erros no arquivo de log com data e hora."""
+    """Anexa linha de erro com timestamp (sem libs externas)."""
     ARQ_LOG.parent.mkdir(parents=True, exist_ok=True)
     with ARQ_LOG.open("a", encoding="utf-8") as f:
         f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}\n")
 
+
 def escrever_relatorio(texto: str) -> None:
-    """Grava o relatório final de análises."""
+    """Salva relatório final em relatorios/relatorio.txt."""
     ARQ_REL.parent.mkdir(parents=True, exist_ok=True)
     ARQ_REL.write_text(texto, encoding="utf-8")
 
+
 def encontrar_usuario(nome: str) -> Usuario | None:
-    """Procura um usuário pelo nome (ignora maiúsculas/minúsculas)."""
+    """Procura usuário pelo nome (case-insensitive)."""
+    n = nome.strip().lower()
     for u in USUARIOS:
-        if u.nome.lower() == nome.strip().lower():
+        if u.nome.strip().lower() == n:
             return u
     return None
 
-def carregar_dados():
-    """Lê config/dados.md e preenche listas de usuários, músicas e podcasts."""
+
+# ------------------------- carga do config/dados.md ---------------------------
+def carregar_dados() -> None:
+    """
+    Parser simples do arquivo markdown:
+      # MÚSICAS  -> - titulo | duracao | artista | genero
+      # PODCASTS -> - titulo | duracao | artista | temporada | episodio | host
+      # USUÁRIOS -> - nome
+    """
     if not ARQ_DADOS.exists():
         log_erro("Arquivo de dados não encontrado.")
         return
+
     sec = None
-    for linha in ARQ_DADOS.read_text(encoding="utf-8").splitlines():
-        li = linha.strip()
-        if not li or li.startswith("# Aqui"): continue
-        if li.startswith("#"):
-            titulo = li.lstrip("#").strip().upper()
-            if "MUSICA" in titulo: sec = "M"
-            elif "PODCAST" in titulo: sec = "P"
-            elif "USUARIO" in titulo: sec = "U"
-            else: sec = None
+    linhas = ARQ_DADOS.read_text(encoding="utf-8").splitlines()
+    for raw in linhas:
+        li = raw.strip()
+        if not li or li.startswith("# Aqui"):
             continue
+
+        # títulos de seção (tolerante a acentos/maiúsculas)
+        if li.startswith("#"):
+            t = li.lstrip("#").strip().upper()
+            if "MUSICA" in t or "MÚSICA" in t:
+                sec = "M"
+            elif "PODCAST" in t:
+                sec = "P"
+            elif "USUARIO" in t or "USUÁRIO" in t:
+                sec = "U"
+            else:
+                sec = None
+            continue
+
         try:
-            if sec == "M":
-                t, d, a, g = [x.strip() for x in li.lstrip("-").split("|")]
-                MUSICAS.append(Musica(t, int(d), a, g))
-            elif sec == "P":
-                t, d, a, temp, epi, h = [x.strip() for x in li.lstrip("-").split("|")]
-                PODCASTS.append(Podcast(t, int(d), a, temp, int(epi), h))
-            elif sec == "U":
+            if sec == "M":  # músicas
+                if not li.startswith("-"):
+                    raise ValueError("Linha de MÚSICAS deve iniciar com '-'")
+                campos = [c.strip() for c in li.lstrip("-").split("|")]
+                if len(campos) != 4:
+                    raise ValueError("MÚSICAS: esperado 4 campos")
+                titulo, duracao, artista, genero = campos
+                dur = int(duracao)
+                MUSICAS.append(Musica(titulo, dur, artista, genero))
+
+            elif sec == "P":  # podcasts
+                if not li.startswith("-"):
+                    raise ValueError("Linha de PODCASTS deve iniciar com '-'")
+                campos = [c.strip() for c in li.lstrip("-").split("|")]
+                if len(campos) != 6:
+                    raise ValueError("PODCASTS: esperado 6 campos")
+                titulo, duracao, artista, temporada, episodio, host = campos
+                dur = int(duracao)
+                epi = int(episodio)
+                PODCASTS.append(Podcast(titulo, dur, artista, temporada, epi, host))
+
+            elif sec == "U":  # usuários
+                if not li.startswith("-"):
+                    raise ValueError("Linha de USUÁRIOS deve iniciar com '-'")
                 nome = li.lstrip("-").strip()
                 if not encontrar_usuario(nome):
                     USUARIOS.append(Usuario(nome))
+                else:
+                    log_erro(f"Usuário duplicado ignorado: {nome}")
         except Exception as e:
-            log_erro(f"Erro ao processar linha: {linha} ({e})")
+            log_erro(f"Erro ao processar linha: {raw} ({e})")
 
-# ----------------------------- Funções auxiliares -----------------------------
-def acao_reproduzir(usuario: Usuario):
-    titulo = input("Título da mídia: ").strip()
-    midia = ArquivoDeMidia.buscar_por_titulo(titulo)
-    if midia:
-        usuario.ouvir_midia(midia)
-    else:
+
+# ------------------------------- ações de menu --------------------------------
+def listar_musicas() -> None:
+    if not MUSICAS:
+        print("Não há músicas.")
+        return
+    for m in MUSICAS:
+        print(m)
+
+
+def listar_podcasts() -> None:
+    if not PODCASTS:
+        print("Não há podcasts.")
+        return
+    for p in PODCASTS:
+        print(p)
+
+
+def listar_playlists() -> None:
+    if not PLAYLISTS:
+        print("Não há playlists.")
+        return
+    for pl in PLAYLISTS:
+        print(pl)
+
+
+def listar_usuarios() -> None:
+    if not USUARIOS:
+        print("Não há usuários.")
+        return
+    for u in USUARIOS:
+        print(u)
+
+
+def acao_reproduzir_midia(usuario: Usuario) -> None:
+    """Reproduz música/podcast pelo título (busca global por título)."""
+    titulo = input("Título da mídia (música/podcast): ").strip()
+    mid = ArquivoDeMidia.buscar_por_titulo(titulo)
+    if mid is None:
         print("Mídia não encontrada.")
-        log_erro(f"Tentativa de reprodução inválida: {titulo}")
+        log_erro(f"Tentativa de reproduzir mídia inexistente: {titulo}")
+        return
+    try:
+        usuario.ouvir_midia(mid)
+    except Exception as e:
+        log_erro(f"Erro ao reproduzir '{titulo}' para {usuario.nome}: {e}")
 
-def acao_criar_playlist(usuario: Usuario):
+
+def acao_criar_playlist(usuario: Usuario) -> None:
+    """Cria playlist para o usuário e registra também no índice global."""
     nome = input("Nome da nova playlist: ").strip()
     try:
-        pl = usuario.criar_playlist(nome)
-        PLAYLISTS.append(pl)
+        pl = usuario.criar_playlist(nome)  # valida duplicidade por usuário
+        if pl not in PLAYLISTS:
+            PLAYLISTS.append(pl)
         print(f"Playlist '{pl.nome}' criada.")
     except ValueError as e:
-        log_erro(str(e))
-        print(e)
+        print("Não foi possível criar playlist.")
+        log_erro(f"Erro ao criar playlist '{nome}' para {usuario.nome}: {e}")
 
-def acao_relatorio():
-    """Gera e salva relatório com análises do sistema."""
-    texto = []
-    texto.append("=== RELATÓRIO DO SISTEMA ===")
-    texto.append(f"Usuários: {len(USUARIOS)} | Músicas: {len(MUSICAS)} | Podcasts: {len(PODCASTS)}")
-    top = Analises.top_musicas_reproduzidas(MUSICAS, 5)
-    texto.append("\nTop 5 músicas mais reproduzidas:")
-    texto += [f"- {m.titulo} ({m.reproducoes} plays)" for m in top] or ["- Nenhuma"]
-    escrever_relatorio("\n".join(texto))
-    print("Relatório salvo em relatorios/relatorio.txt")
 
-# ------------------------------ Função principal ------------------------------
-def main():
-    """Ponto de entrada principal do sistema."""
-    carregar_dados()
+def acao_reproduzir_playlist(usuario: Usuario) -> None:
+    """Reproduz playlist do usuário (nome case-insensitive)."""
+    nome_in = input("Nome da playlist: ").strip().lower()
+
+    # 1) busca primeiro nas playlists do próprio usuário
+    alvo = next((p for p in usuario.playlists
+                 if p.nome.strip().lower() == nome_in), None)
+
+    # 2) fallback: busca no índice global comparando pelo NOME do usuário
+    if not alvo:
+        uname = usuario.nome.strip().lower()
+        alvo = next((p for p in PLAYLISTS
+                     if p.nome.strip().lower() == nome_in
+                     and p.usuario.nome.strip().lower() == uname), None)
+
+    if not alvo:
+        print("Playlist não encontrada para este usuário.")
+        log_erro(f"Playlist inexistente para {usuario.nome}: {nome_in}")
+        return
+
+    alvo.reproduzir()
+
+
+def acao_concatenar_playlists(usuario: Usuario) -> None:
+    """Concatena duas playlists do usuário usando __add__."""
+    a = input("Nome da playlist A (destino): ").strip().lower()
+    b = input("Nome da playlist B (origem) : ").strip().lower()
+
+    pa = next((p for p in usuario.playlists if p.nome.strip().lower() == a), None)
+    pb = next((p for p in usuario.playlists if p.nome.strip().lower() == b), None)
+
+    if not pa or not pb:
+        print("Playlist A ou B não encontrada.")
+        log_erro(f"Concatenação inválida para {usuario.nome}: A='{a}' B='{b}'")
+        return
+
+    nova = pa + pb  # mantém nome da A e soma reproduções (regra do enunciado)
+
+    # evita nome exatamente duplicado na coleção do usuário
+    base = nova.nome
+    suf = 1
+    while any(p.nome.strip().lower() == nova.nome.strip().lower()
+              for p in usuario.playlists):
+        suf += 1
+        nova.nome = f"{base} ({suf})"
+
+    usuario.playlists.append(nova)
+    PLAYLISTS.append(nova)
+    print(f"Playlist concatenada criada: {nova.nome}")
+
+
+def acao_gerar_relatorio() -> None:
+    """Gera relatório agregando as análises exigidas."""
+    linhas: list[str] = []
+    linhas.append("=== RELATÓRIO DO SISTEMA ===")
+    linhas.append(f"Usuários: {len(USUARIOS)} | Músicas: {len(MUSICAS)} | Podcasts: {len(PODCASTS)}")
+    linhas.append("")
+
+    # Top músicas (usa argumento posicional para evitar problemas)
+    linhas.append("Top 5 músicas mais reproduzidas:")
+    top5 = Analises.top_musicas_reproduzidas(MUSICAS, 5)
+    if not top5:
+        linhas.append("- (vazio)")
+    else:
+        for m in top5:
+            linhas.append(f"- {m.titulo} ({m.reproducoes})")
+    linhas.append("")
+
+    # Playlist mais popular
+    pop = Analises.playlist_mais_popular(PLAYLISTS)
+    linhas.append(f"Playlist mais popular: {pop.nome if pop else 'N/A'}")
+
+    # Usuário mais ativo
+    ativo = Analises.usuario_mais_ativo(USUARIOS)
+    linhas.append(f"Usuário mais ativo: {ativo.nome if ativo else 'N/A'}")
+    linhas.append("")
+
+    # Médias de avaliação por música
+    linhas.append("Médias de avaliação por música:")
+    medias = Analises.media_avaliacoes(MUSICAS)
+    if not medias:
+        linhas.append("- (vazio)")
+    else:
+        for titulo, media in medias.items():
+            linhas.append(f"- {titulo}: {media:.2f}")
+    linhas.append("")
+
+    # Total de reproduções (histórico somado)
+    total = Analises.total_reproducoes(USUARIOS)
+    linhas.append(f"Total de reproduções no sistema: {total}")
+
+    escrever_relatorio("\n".join(linhas))
+    print(f"Relatório salvo em {ARQ_REL}")
+
+
+# -------------------------------- fluxo principal -----------------------------
+def main() -> None:
+    carregar_dados()            # lê config/dados.md e preenche listas
     menu = Menu()
+
     while True:
         op = menu.exibir_menu_inicial()
         if op == "1":  # Entrar como usuário
@@ -113,32 +279,49 @@ def main():
             if not u:
                 print("Usuário não encontrado.")
                 continue
+
+            # menu interno do usuário
             while True:
                 opu = menu.exibir_menu_usuario(u.nome)
-                if opu == "1": acao_reproduzir(u)
-                elif opu == "2": [print(m) for m in MUSICAS]
-                elif opu == "3": [print(p) for p in PODCASTS]
-                elif opu == "4": [print(p) for p in PLAYLISTS]
-                elif opu == "5": acao_criar_playlist(u)
-                elif opu == "6": acao_relatorio()
-                elif opu == "7": break
+                if   opu == "1": acao_reproduzir_midia(u)
+                elif opu == "2": listar_musicas()
+                elif opu == "3": listar_podcasts()
+                elif opu == "4": listar_playlists()
+                elif opu == "5": acao_reproduzir_playlist(u)
+                elif opu == "6": acao_criar_playlist(u)
+                elif opu == "7": acao_concatenar_playlists(u)
+                elif opu == "8": acao_gerar_relatorio()
+                elif opu == "9": break
                 else: print("Opção inválida.")
+
         elif op == "2":  # Criar novo usuário
-            nome = input("Nome: ").strip()
+            nome = input("Nome do novo usuário: ").strip()
             if encontrar_usuario(nome):
                 print("Usuário já existe.")
-                log_erro(f"Duplicado: {nome}")
+                log_erro(f"Tentativa de criar usuário duplicado: {nome}")
             else:
-                USUARIOS.append(Usuario(nome))
-                print("Usuário criado.")
-        elif op == "3": [print(u) for u in USUARIOS]
-        elif op == "4": break
-        else: print("Opção inválida.")
+                try:
+                    USUARIOS.append(Usuario(nome))
+                    print("Usuário criado.")
+                except ValueError as e:
+                    print("Nome inválido.")
+                    log_erro(f"Erro ao criar usuário '{nome}': {e}")
 
-# -------------------------------- Execução ------------------------------------
+        elif op == "3":  # Listar usuários
+            listar_usuarios()
+
+        elif op == "4":  # Sair
+            print("Encerrando o sistema.")
+            break
+
+        else:
+            print("Opção inválida.")
+
+
+# --------------------------------- execução -----------------------------------
 if __name__ == "__main__":
     try:
         main()
     except Exception as e:
         log_erro(f"Erro crítico: {e}")
-        print("Erro crítico. Verifique logs/erros.log.")
+        print("Erro crítico. Veja logs/erros.log.")
