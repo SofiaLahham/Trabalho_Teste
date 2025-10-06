@@ -1,4 +1,9 @@
-"""
-Pacote Streaming – TG1 (Programação Orientada a Dados)
-Contém todas as classes e módulos do sistema de Streaming de Música.
-"""
+# Streaming/__init__.py
+
+from .arquivo_de_midia import ArquivoDeMidia
+from .musica import Musica
+from .podcast import Podcast
+from .playlist import Playlist
+from .usuario import Usuario
+from .menu import Menu
+from .analises import Analises
