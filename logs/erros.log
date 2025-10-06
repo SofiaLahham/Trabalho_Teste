@@ -1,2 +1,9 @@
 # log inicial
 
+[2025-10-06 00:56:39] Tentativa de criar usuário duplicado: Sofia
+[2025-10-06 00:57:53] Playlist inexistente para Sofia: Playlist01
+[2025-10-06 00:58:05] Erro crítico: Analises.top_musicas_reproduzidas() got an unexpected keyword argument 'top_n'
+[2025-10-06 01:05:26] Playlist inexistente para Sofia: Playlist01
+[2025-10-06 01:10:55] Playlist inexistente para Sofia: playlist01
+[2025-10-06 01:12:22] Playlist inexistente para Sofia: playlist02
+[2025-10-06 01:14:29] Playlist inexistente para Sofia: playlistt
