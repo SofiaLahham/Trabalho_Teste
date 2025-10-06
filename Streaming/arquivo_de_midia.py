@@ -10,9 +10,9 @@ class ArquivoDeMidia:
     # Lista de todas as mídias criadas
     # Usada para buscas por título em todo o sistema
     registroMidia = []
-
+    
     def __init__(self, titulo: str, duracao: int, artista: str, reproducoes: int = 0):
-        """Inicializa os atributos básicos de uma mídia."""
+        # Inicializa os atributos básicos de uma mídia
         self.titulo = titulo.strip()
         self.artista = artista.strip()
 
@@ -31,7 +31,7 @@ class ArquivoDeMidia:
 
     @classmethod
     def buscar_por_titulo(cls, titulo: str):
-        """Procura uma mídia pelo título (ignora maiúsculas e espaços)."""
+        # Procura uma mídia pelo título (ignora maiúsculas e espaços)
         t = titulo.strip().lower()
         for m in cls.registroMidia:
             if m.titulo.strip().lower() == t:
@@ -39,25 +39,23 @@ class ArquivoDeMidia:
         return None
 
     def reproduzir(self) -> None:
-        """Simula a reprodução da mídia e mostra informações básicas."""
-        self.reproducoes += 1
-        print(f"▶ Reproduzindo: '{self.titulo}' — {self.artista} ({self.duracao}s). "
-              f"Total de reproduções: {self.reproducoes}")
+        # Método base: deve ser sobrescrito nas subclasses (Musica e Podcast)
+        raise NotImplementedError("O método 'reproduzir' deve ser implementado nas subclasses.")
 
     def __eq__(self, other) -> bool:
-        """Dois arquivos são iguais se tiverem o mesmo título e artista."""
+        # Dois arquivos são iguais se tiverem o mesmo título e artista
         if not isinstance(other, ArquivoDeMidia):
             return NotImplemented
         return (self.titulo.strip().lower() == other.titulo.strip().lower() and
                 self.artista.strip().lower() == other.artista.strip().lower())
 
     def __str__(self) -> str:
-        """Retorna uma string amigável com as informações principais."""
+        # Exibição amigável das informações principais
         return (f"Mídia: {self.titulo} | Artista: {self.artista} | "
                 f"Duração: {self.duracao}s | Reproduções: {self.reproducoes}")
 
     def __repr__(self) -> str:
-        """Representação detalhada (para depuração)."""
+        # Representação detalhada (para depuração)
         cls = self.__class__.__name__
         return (f"{cls}(titulo='{self.titulo}', duracao={self.duracao}, "
                 f"artista='{self.artista}', reproducoes={self.reproducoes})")
