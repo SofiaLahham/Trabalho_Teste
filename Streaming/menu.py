@@ -1,10 +1,7 @@
 # Streaming/menu.py
 
 class Menu:
-    """
-    Classe responsável por exibir e gerenciar os menus do sistema de streaming.
-    Contém o menu inicial e o menu do usuário.
-    """
+    """Classe responsável por exibir e gerenciar os menus do sistema."""
 
     def __init__(self):
         """Inicializa as opções disponíveis nos menus."""
@@ -30,19 +27,13 @@ class Menu:
     def exibir_menu_inicial(self):
         """Mostra o menu principal e retorna a escolha do usuário."""
         print("\n=== MENU INICIAL ===")
-        """chave = número da opção / descricao = texto exibido na tela"""
         for chave, descricao in self.opcoes_iniciais.items():
             print(f"{chave} - {descricao}")
         return input("Escolha uma opção: ")
 
     def exibir_menu_usuario(self, nome_usuario: str):
-        """Exibe o menu do usuário logado e retorna a escolha."""
+        """Mostra o menu do usuário logado e retorna a escolha."""
         print(f"\n=== MENU DO USUÁRIO: {nome_usuario} ===")
-        """chave = número da opção / descricao = texto exibido na tela"""
         for chave, descricao in self.opcoes_usuario.items():
             print(f"{chave} - {descricao}")
         return input("Escolha uma opção: ")
-
-    def __str__(self):
-        """Retorna uma descrição simples da classe."""
-        return "Classe responsável pelos menus do sistema de streaming."
