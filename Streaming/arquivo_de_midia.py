@@ -2,36 +2,34 @@
 
 class ArquivoDeMidia:
     """
-    Classe base para qualquer tipo de mídia (música, podcast, etc.)
+    Classe base para qualquer tipo de mídia (música, podcast, etc.).
     Define atributos e comportamentos comuns.
-    A igualdade (__eq__) compara título e artista, sem diferenciar maiúsculas/minúsculas.
     """
 
-    # Lista de todas as mídias criadas
-    # Usada para buscas por título em todo o sistema
+    """Lista com todas as mídias registradas (usada para buscas)."""
     registroMidia = []
-    
+
     def __init__(self, titulo: str, duracao: int, artista: str, reproducoes: int = 0):
-        # Inicializa os atributos básicos de uma mídia
+        """Inicializa os atributos básicos de uma mídia."""
         self.titulo = titulo.strip()
         self.artista = artista.strip()
 
-        # Validação da duração (deve ser inteiro positivo)
+        """Validação da duração (deve ser um inteiro positivo)."""
         if not isinstance(duracao, int) or duracao <= 0:
             raise ValueError("Duração inválida: deve ser um inteiro positivo.")
         self.duracao = duracao
 
-        # Validação das reproduções (inteiro >= 0)
+        """Validação das reproduções (deve ser um inteiro >= 0)."""
         if not isinstance(reproducoes, int) or reproducoes < 0:
             raise ValueError("Reproduções inválidas: deve ser um inteiro maior ou igual a zero.")
         self.reproducoes = reproducoes
 
-        # Adiciona a mídia ao registro global
+        """Adiciona a mídia criada ao registro global."""
         ArquivoDeMidia.registroMidia.append(self)
 
     @classmethod
     def buscar_por_titulo(cls, titulo: str):
-        # Procura uma mídia pelo título (ignora maiúsculas e espaços)
+        """Busca uma mídia pelo título (ignora maiúsculas e espaços)."""
         t = titulo.strip().lower()
         for m in cls.registroMidia:
             if m.titulo.strip().lower() == t:
@@ -39,23 +37,24 @@ class ArquivoDeMidia:
         return None
 
     def reproduzir(self) -> None:
-        # Método base: deve ser sobrescrito nas subclasses (Musica e Podcast)
-        raise NotImplementedError("O método 'reproduzir' deve ser implementado nas subclasses.")
+        """Incrementa o número de reproduções da mídia."""
+        self.reproducoes += 1
+        print(f"Reproduzindo: '{self.titulo}' - {self.artista}")
 
     def __eq__(self, other) -> bool:
-        # Dois arquivos são iguais se tiverem o mesmo título e artista
+        """Compara mídias pelo título e artista (ignora maiúsculas/minúsculas)."""
         if not isinstance(other, ArquivoDeMidia):
             return NotImplemented
         return (self.titulo.strip().lower() == other.titulo.strip().lower() and
                 self.artista.strip().lower() == other.artista.strip().lower())
 
     def __str__(self) -> str:
-        # Exibição amigável das informações principais
+        """Mostra as informações principais da mídia."""
         return (f"Mídia: {self.titulo} | Artista: {self.artista} | "
                 f"Duração: {self.duracao}s | Reproduções: {self.reproducoes}")
 
     def __repr__(self) -> str:
-        # Representação detalhada (para depuração)
+        """Retorna uma representação detalhada da mídia."""
         cls = self.__class__.__name__
         return (f"{cls}(titulo='{self.titulo}', duracao={self.duracao}, "
                 f"artista='{self.artista}', reproducoes={self.reproducoes})")
