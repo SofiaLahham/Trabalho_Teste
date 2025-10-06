@@ -1,4 +1,3 @@
-# main.py
 # Ponto de entrada do sistema: carrega dados, exibe menus e coordena as ações.
 
 from datetime import datetime
