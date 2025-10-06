@@ -1,6 +1,5 @@
 # Streaming/playlist.py
 from .arquivo_de_midia import ArquivoDeMidia
-from .usuario import Usuario
 
 class Playlist:
     """
@@ -8,30 +7,27 @@ class Playlist:
     Atributos: nome (str), usuario (Usuario), itens (list[ArquivoDeMidia]), reproducoes (int).
     """
 
-    def __init__(self, nome: str, usuario: Usuario):
-        """Cria uma playlist vazia para um usuário."""
+    def __init__(self, nome: str, usuario):
+        """Cria uma playlist vazia para um usuário (usuario deve ser um objeto Usuario)."""
         nome_limpo = nome.strip()
         if not nome_limpo:
             raise ValueError("Nome de playlist inválido.")
-        if not isinstance(usuario, Usuario):
-            raise ValueError("Usuário inválido para a playlist.")
 
-        """Atributos principais"""
-        self.nome = nome_limpo                     # nome da playlist
-        self.usuario = usuario                     # dono/criador da playlist
-        self.itens: list[ArquivoDeMidia] = []      # lista de mídias (músicas/podcasts)
-        self.reproducoes = 0                       # contador de execuções da playlist
+        self.nome = nome_limpo                    # nome da playlist
+        self.usuario = usuario                    # dono/criador da playlist (objeto Usuario)
+        self.itens: list[ArquivoDeMidia] = []     # lista de mídias (músicas/podcasts)
+        self.reproducoes = 0                      # contador de execuções da playlist
 
     def adicionar_midia(self, midia: ArquivoDeMidia) -> None:
         """Adiciona uma mídia (música/podcast) à playlist."""
         if not isinstance(midia, ArquivoDeMidia):
             raise ValueError("Apenas objetos de mídia podem ser adicionados.")
-        self.itens.append(midia)                   # adiciona no final da lista
+        self.itens.append(midia)
 
     def remover_midia(self, midia: ArquivoDeMidia) -> None:
         """Remove uma mídia da playlist."""
         if midia in self.itens:
-            self.itens.remove(midia)               # remove a primeira ocorrência
+            self.itens.remove(midia)
         else:
             raise ValueError("Mídia não encontrada na playlist.")
 
@@ -44,14 +40,13 @@ class Playlist:
             print(f"Playlist '{self.nome}' está vazia.")
             return
 
-        print(f"\nReproduzindo playlist: {self.nome} (itens: {len(self.itens)})")
-        """Percorre a lista e chama o método reproduzir() de cada mídia"""
+        print(f"Reproduzindo playlist: {self.nome} (itens: {len(self.itens)})")
         for midia in self.itens:
             midia.reproduzir()
         self.reproducoes += 1
         print(f"Fim da playlist '{self.nome}'. Reproduções: {self.reproducoes}")
 
-    def __add__(self, outra: "Playlist") -> "Playlist":
+    def __add__(self, outra):
         """
         Concatena duas playlists.
         Mantém o nome da primeira, concatena itens e soma as reproduções.
@@ -59,10 +54,8 @@ class Playlist:
         if not isinstance(outra, Playlist):
             return NotImplemented
 
-        """Cria nova playlist com mesmo nome e usuário"""
-        nova = Playlist(self.nome, self.usuario)
-        """Junta os itens e soma as reproduções"""
-        nova.itens = list(self.itens) + list(outra.itens)
+        nova = Playlist(self.nome, self.usuario)          # mesmo nome e mesmo usuário da primeira
+        nova.itens = list(self.itens) + list(outra.itens) # concatena itens
         nova.reproducoes = self.reproducoes + outra.reproducoes
         return nova
 
@@ -76,10 +69,10 @@ class Playlist:
 
     def __eq__(self, outra: object) -> bool:
         """
-        Compara playlists:
-        - Mesmo nome (case-insensitive)
-        - Mesmo usuário
-        - Mesmos títulos de mídias (ignora ordem)
+        Duas playlists são iguais se:
+        - tiverem o mesmo nome (ignora maiúsculas/minúsculas);
+        - tiverem o mesmo usuário (mesma instância);
+        - tiverem os mesmos títulos de mídias (ignora ordem).
         """
         if not isinstance(outra, Playlist):
             return NotImplemented
@@ -90,16 +83,13 @@ class Playlist:
         if self.nome.strip().lower() != outra.nome.strip().lower():
             return False
 
-        """Cria listas com os títulos das mídias, em minúsculas"""
         def titulos(pl):
             return [m.titulo.strip().lower() for m in pl.itens]
 
-        a = sorted(titulos(self))
-        b = sorted(titulos(outra))
-        return a == b
+        return sorted(titulos(self)) == sorted(titulos(outra))
 
     def __str__(self) -> str:
-        """Mostra um resumo da playlist."""
+        """Resumo da playlist."""
         return (f"Playlist: {self.nome} | Usuário: {self.usuario.nome} | "
                 f"Itens: {len(self.itens)} | Reproduções: {self.reproducoes}")
 
