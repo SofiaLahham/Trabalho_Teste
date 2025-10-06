@@ -1,18 +1,15 @@
-# relatório inicial
 === RELATÓRIO DO SISTEMA ===
-Usuários: 2 | Músicas: 3 | Podcasts: 2
+Usuários: 1 | Músicas: 2 | Podcasts: 2
 
 Top 5 músicas mais reproduzidas:
-- Flor e o Beija-Flor (0)
-- Imagine (0)
-- As It Was (0)
+- Deja Vu (1)
+- Loveeee Song (0)
 
-Playlist mais popular: N/A
+Playlist mais popular: PlaylistSofia
 Usuário mais ativo: Sofia
 
 Médias de avaliação por música:
-- Flor e o Beija-Flor: 0.00
-- Imagine: 0.00
-- As It Was: 0.00
+- Deja Vu: 0.00
+- Loveeee Song: 0.00
 
 Total de reproduções no sistema: 0
