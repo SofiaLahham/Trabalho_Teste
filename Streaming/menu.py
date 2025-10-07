@@ -24,16 +24,16 @@ class Menu:
             "9": "Sair"
         }
 
-    def exibir_menu_inicial(self):
-        """Mostra o menu principal e retorna a escolha do usuário."""
+    def exibir_menu_inicial(self) -> str:
+        """Mostra o menu principal e retorna a escolha do usuário (sem espaços)."""
         print("\n=== MENU INICIAL ===")
         for chave, descricao in self.opcoes_iniciais.items():
             print(f"{chave} - {descricao}")
-        return input("Escolha uma opção: ")
+        return input("Escolha uma opção: ").strip()
 
-    def exibir_menu_usuario(self, nome_usuario: str):
-        """Mostra o menu do usuário logado e retorna a escolha."""
+    def exibir_menu_usuario(self, nome_usuario: str) -> str:
+        """Mostra o menu do usuário logado e retorna a escolha (sem espaços)."""
         print(f"\n=== MENU DO USUÁRIO: {nome_usuario} ===")
         for chave, descricao in self.opcoes_usuario.items():
             print(f"{chave} - {descricao}")
-        return input("Escolha uma opção: ")
+        return input("Escolha uma opção: ").strip()
