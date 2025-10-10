@@ -30,10 +30,7 @@ Abaixo está a organização principal do repositório, conforme o padrão exigi
 
 1. Abra o terminal no diretório principal do projeto.
    
-2. Execute o comando:
-   
-cd "C:\Users\Lenovo\Desktop\TG1\Trabalho_Teste"  
-depois: python main.py
+2. Execute o comando: `cd "C:\Users\Lenovo\Desktop\TG1\Trabalho_Teste" ` e depois: `python main.py`
 3. O sistema carregará automaticamente os dados da pasta config/.
 
 4.Em caso de erros ou inconsistências, verifique o arquivo logs/erros.log.
